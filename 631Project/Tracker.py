@@ -11,9 +11,10 @@ class Tracker:
         self.prior_frame = self.frame
         self.prior_gray_frame = self.gray_frame
         self.frame_size = frame_size
+        self.points_range = points_range
 
         self.corners = cv2.goodFeaturesToTrack(self.gray_frame,
-                                               maxCorners=points_range[1],
+                                               maxCorners=self.points_range[1],
                                                qualityLevel=0.3,
                                                minDistance=7,
                                                blockSize=7
@@ -28,6 +29,7 @@ class Tracker:
 
     def update(self, frame):
         self.step(frame)
+
         self.corners, self.status, self.error = cv2.calcOpticalFlowPyrLK(self.prior_gray_frame,
                                                                          self.gray_frame,
                                                                          self.prior_corners,
@@ -39,6 +41,11 @@ class Tracker:
                                                                                    10,
                                                                                    0.03)
                                                                          )
+
+        deficit = self.points_range[1]-self.corners.shape[0]
+
+        if deficit > 0:
+            self.supplement()
 
         for i in range(self.corners.shape[0]):
             self.points[i].update(tuple(self.corners[i, 0]))
@@ -52,6 +59,19 @@ class Tracker:
                 print('DELETED: ', point.location)
 
         self.draw()
+
+    def supplement(self):
+        corners_supplement = cv2.goodFeaturesToTrack(self.gray_frame,
+                                                     maxCorners=deficit,
+                                                     qualityLevel=0.3,
+                                                     minDistance=7,
+                                                     blockSize=7
+                                                     )
+
+        for i in range(corners_supplement.shape[0]):
+            self.points.append(Point(tuple(corners_supplement[i, 0])))
+
+        self.corners = np.concatenate((self.corners, corners_supplement), 0)
 
     def draw(self):
         for point in self.points:
@@ -67,3 +87,4 @@ class Tracker:
         self.prior_corners = np.zeros((len(self.points), 1, 2), dtype=np.float32)
         for i in range(len(self.points)):
             self.prior_corners[i, 0] = self.points[i].location
+        self.corners = None
