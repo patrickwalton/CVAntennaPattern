@@ -1,31 +1,36 @@
 import numpy as np
 from Point import Point
+from Pose import Pose
 import cv2
 
 
 class Tracker:
     # Finds, tracks, and manages points in an image
-    def __init__(self, frame, points_range, frame_size):
+    def __init__(self, frame, point_count, frame_size, camera_matrix):
         self.frame = frame
         self.gray_frame = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
         self.prior_frame = self.frame
         self.prior_gray_frame = self.gray_frame
         self.frame_size = frame_size
-        self.points_range = points_range
+        self.point_count = point_count
+        self.camera_matrix = camera_matrix
 
         self.corners = cv2.goodFeaturesToTrack(self.gray_frame,
-                                               maxCorners=self.points_range[1],
+                                               maxCorners=self.point_count,
                                                qualityLevel=0.3,
                                                minDistance=7,
                                                blockSize=7
                                                )
         self.prior_corners = self.corners
+        self.deficit = 0
 
         self.points = []
         for i in range(self.corners.shape[0]):
             self.points.append(Point(tuple(self.corners[i, 0])))
 
         self.draw()
+
+        self.pose = Pose(self.camera_matrix)
 
     def update(self, frame):
         self.step(frame)
@@ -42,9 +47,11 @@ class Tracker:
                                                                                    0.03)
                                                                          )
 
-        deficit = self.points_range[1]-self.corners.shape[0]
+        self.pose.update(self.prior_corners, self.corners)
 
-        if deficit > 0:
+        self.deficit = self.point_count-self.corners.shape[0]
+
+        if self.deficit > 0:
             self.supplement()
 
         for i in range(self.corners.shape[0]):
@@ -56,13 +63,13 @@ class Tracker:
                     or point.location[0] > self.frame_size[0] \
                     or point.location[1] > self.frame_size[1]:
                 del self.points[self.points.index(point)]
-                print('DELETED: ', point.location)
+                # print('DELETED: ', point.location)
 
         self.draw()
 
     def supplement(self):
         corners_supplement = cv2.goodFeaturesToTrack(self.gray_frame,
-                                                     maxCorners=deficit,
+                                                     maxCorners=self.deficit,
                                                      qualityLevel=0.3,
                                                      minDistance=7,
                                                      blockSize=7
@@ -73,10 +80,12 @@ class Tracker:
 
         self.corners = np.concatenate((self.corners, corners_supplement), 0)
 
+        self.deficit = 0
+
     def draw(self):
         for point in self.points:
-            cv2.line(self.frame, point.prior_location, point.location, (255, 255, 255), 3)
-            cv2.circle(self.frame, point.location, 5, (0, 0, 255), -1)
+            cv2.line(self.frame, point.prior_location, point.location, (255, 255, 255), 1)
+            cv2.circle(self.frame, point.location, 2, (0, 0, 255), -1)
 
     def step(self, frame):
         self.prior_frame = self.frame
