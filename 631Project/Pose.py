@@ -10,6 +10,7 @@ class Pose:
         self.position = np.zeros((3, 1))
         self.orientation = np.eye(3)
         self.pose = np.eye(4)
+        self.orientationh = np.eye(4)
 
         self.draw()
 
@@ -17,20 +18,30 @@ class Pose:
         self.essential_matrix, mask = cv2.findEssentialMat(prior_corners,
                                                            corners,
                                                            self.camera_matrix,
-                                                           method=cv2.RANSAC,
-                                                           prob=0.999,
-                                                           threshold=1.0
+                                                           method=0
                                                            )
 
         retval, R, t, mask2 = cv2.recoverPose(self.essential_matrix,
                                               prior_corners,
                                               corners,
-                                              self.camera_matrix
+                                              self.camera_matrix,
+                                              mask
                                               )
+
+        # R1, R2, t = cv2.decomposeEssentialMat(self.essential_matrix)
+        #
+        # if np.trace(R1) < 2.5:
+        #     R = R1
+        # else:
+        #     R = R2
 
         self.orientation = np.matmul(R, self.orientation)
 
         self.position = self.position + np.dot(R, t)
+
+        self.orientationh = np.concatenate((np.concatenate((self.orientation,
+                                                   np.zeros((3, 1))), 1),
+                                   np.ones((1, 4))), 0)
 
         self.pose = np.concatenate((np.concatenate((self.orientation,
                                                    self.position), 1),
@@ -40,8 +51,6 @@ class Pose:
 
         self.draw()
 
-        # self.rotationMatrixToEulerAngles()
-
     def draw(self):
         cx, cy, a = 30, 30, 10
 
@@ -50,7 +59,9 @@ class Pose:
                            [1,    1,    1,    1,    1],
                            [1,    1,    1,    1,    1]])
 
-        square = np.matmul(self.pose, square) + 250 * np.ones((4,5))
+        square2 = np.matmul(self.orientationh, square) + 250 * np.ones((4, 5))
+
+        square = np.matmul(self.pose, square) + 250 * np.ones((4, 5))
 
         plot_frame = 255 * np.ones((500, 500))
 
@@ -76,32 +87,12 @@ class Pose:
                      3
                      )
 
+        for i in range(square2.shape[1]-1):
+            cv2.line(plot_frame,
+                     tuple(square2[0:2, i].astype(np.int)),
+                     tuple(square2[0:2, i+1].astype(np.int)),
+                     (0, 0, 0),
+                     1
+                     )
+
         cv2.imshow('square', plot_frame)
-
-    # Checks if a matrix is a valid rotation matrix.
-    def isRotationMatrix(self):
-        shouldBeIdentity = np.dot(self.orientation.T, self.orientation)
-        I = np.identity(3, dtype=self.orientation.dtype)
-        n = np.linalg.norm(I - shouldBeIdentity)
-        return n < 1e-6
-
-    # Calculates rotation matrix to euler angles
-    # The result is the same as MATLAB except the order
-    # of the euler angles ( x and z are swapped ).
-    def rotationMatrixToEulerAngles(self):
-
-        assert (self.isRotationMatrix())
-
-        sy = np.sqrt(self.orientation[0, 0] * self.orientation[0, 0] + self.orientation[1, 0] * self.orientation[1, 0])
-
-        singular = sy < 1e-6
-
-        if not singular:
-            self.x = np.arctan2(self.orientation[2, 1], self.orientation[2, 2])
-            self.y = np.arctan2(-self.orientation[2, 0], sy)
-            self.z = np.arctan2(self.orientation[1, 0], self.orientation[0, 0])
-        else:
-            self.x = np.arctan2(-self.orientation[1, 2], self.orientation[1, 1])
-            self.y = np.arctan2(-self.orientation[2, 0], sy)
-            self.z = 0
-

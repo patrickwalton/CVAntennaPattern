@@ -35,7 +35,7 @@ def main():
         if 'tracker' in locals():
             tracker.update(frame)
         else:
-            tracker = Tracker(frame, 500, (frame_width, frame_height), camera_matrix)
+            tracker = Tracker(frame, 20, (frame_width, frame_height), camera_matrix)
 
         # User Interface
         if cv2.waitKey(25) & 0xFF == ord('q'):
