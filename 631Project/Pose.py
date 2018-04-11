@@ -18,7 +18,9 @@ class Pose:
         self.essential_matrix, mask = cv2.findEssentialMat(prior_corners,
                                                            corners,
                                                            self.camera_matrix,
-                                                           method=0
+                                                           method=cv2.RANSAC,
+                                                           prob=0.999,
+                                                           threshold=1.0
                                                            )
 
         retval, R, t, mask2 = cv2.recoverPose(self.essential_matrix,
@@ -39,10 +41,6 @@ class Pose:
 
         self.position = self.position + np.dot(R, t)
 
-        self.orientationh = np.concatenate((np.concatenate((self.orientation,
-                                                   np.zeros((3, 1))), 1),
-                                   np.ones((1, 4))), 0)
-
         self.pose = np.concatenate((np.concatenate((self.orientation,
                                                    self.position), 1),
                                    np.ones((1, 4))), 0)
@@ -52,19 +50,23 @@ class Pose:
         self.draw()
 
     def draw(self):
-        cx, cy, a = 30, 30, 10
 
+        # Square location and size parameters
+        cx, cy, a = 0, 0, 10
+
+        # Initialize Square
         square = np.array([[cx+a, cx-a, cx-a, cx+a, cx+a],
                            [cy+a, cy+a, cy-a, cy-a, cy+a],
                            [1,    1,    1,    1,    1],
                            [1,    1,    1,    1,    1]])
 
-        square2 = np.matmul(self.orientationh, square) + 250 * np.ones((4, 5))
-
+        # Transform Square
         square = np.matmul(self.pose, square) + 250 * np.ones((4, 5))
 
+        # Initialize Plot Frame
         plot_frame = 255 * np.ones((500, 500))
 
+        # Add Coordinate Axis
         cv2.line(plot_frame,
                  (200, 250),
                  (300, 250),
@@ -79,6 +81,7 @@ class Pose:
                  1
                  )
 
+        # Add Transformed Square to Plot
         for i in range(square.shape[1]-1):
             cv2.line(plot_frame,
                      tuple(square[0:2, i].astype(np.int)),
@@ -87,12 +90,5 @@ class Pose:
                      3
                      )
 
-        for i in range(square2.shape[1]-1):
-            cv2.line(plot_frame,
-                     tuple(square2[0:2, i].astype(np.int)),
-                     tuple(square2[0:2, i+1].astype(np.int)),
-                     (0, 0, 0),
-                     1
-                     )
-
+        # Plot Transformed Square
         cv2.imshow('square', plot_frame)

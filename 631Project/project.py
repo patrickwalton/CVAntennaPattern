@@ -8,7 +8,7 @@ import matplotlib.animation as animation
 
 def main():
     # OpenCV Setup
-    cap = cv2.VideoCapture('Morning.mp4')
+    cap = cv2.VideoCapture('Sundial.mp4')
     frame_width = int(0.33*cap.get(3))
     frame_height = int(0.33*cap.get(4))
     frame_rate = 30
@@ -35,7 +35,7 @@ def main():
         if 'tracker' in locals():
             tracker.update(frame)
         else:
-            tracker = Tracker(frame, 20, (frame_width, frame_height), camera_matrix)
+            tracker = Tracker(frame, 500, (frame_width, frame_height), camera_matrix)
 
         # User Interface
         if cv2.waitKey(25) & 0xFF == ord('q'):
