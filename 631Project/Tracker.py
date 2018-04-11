@@ -87,6 +87,7 @@ class Tracker:
             cv2.line(self.frame, point.prior_location, point.location, (255, 255, 255), 1)
             cv2.circle(self.frame, point.location, 2, (0, 0, 255), -1)
 
+
     def step(self, frame):
         self.prior_frame = self.frame
         self.prior_gray_frame = self.gray_frame

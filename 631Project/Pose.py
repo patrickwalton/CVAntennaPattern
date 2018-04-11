@@ -9,6 +9,9 @@ class Pose:
         self.essential_matrix = np.eye(3)
         self.position = np.zeros((3, 1))
         self.orientation = np.eye(3)
+        self.pose = np.eye(4)
+
+        self.draw()
 
     def update(self, prior_corners, corners):
         self.essential_matrix, mask = cv2.findEssentialMat(prior_corners,
@@ -27,12 +30,53 @@ class Pose:
 
         self.orientation = np.matmul(R, self.orientation)
 
-        self.position = self.position + t
+        self.position = self.position + np.dot(R, t)
 
-        self.rotationMatrixToEulerAngles()
-        print(self.x, self.y, self.z)
+        self.pose = np.concatenate((np.concatenate((self.orientation,
+                                                   self.position), 1),
+                                   np.ones((1, 4))), 0)
 
-        # print(t, '/n', self.position)
+        # print(np.concatenate((self.orientation, self.position), 1))
+
+        self.draw()
+
+        # self.rotationMatrixToEulerAngles()
+
+    def draw(self):
+        cx, cy, a = 30, 30, 10
+
+        square = np.array([[cx+a, cx-a, cx-a, cx+a, cx+a],
+                           [cy+a, cy+a, cy-a, cy-a, cy+a],
+                           [1,    1,    1,    1,    1],
+                           [1,    1,    1,    1,    1]])
+
+        square = np.matmul(self.pose, square) + 250 * np.ones((4,5))
+
+        plot_frame = 255 * np.ones((500, 500))
+
+        cv2.line(plot_frame,
+                 (200, 250),
+                 (300, 250),
+                 (0, 0, 0),
+                 1
+                 )
+
+        cv2.line(plot_frame,
+                 (250, 200),
+                 (250, 300),
+                 (0, 0, 0),
+                 1
+                 )
+
+        for i in range(square.shape[1]-1):
+            cv2.line(plot_frame,
+                     tuple(square[0:2, i].astype(np.int)),
+                     tuple(square[0:2, i+1].astype(np.int)),
+                     (0, 0, 0),
+                     3
+                     )
+
+        cv2.imshow('square', plot_frame)
 
     # Checks if a matrix is a valid rotation matrix.
     def isRotationMatrix(self):

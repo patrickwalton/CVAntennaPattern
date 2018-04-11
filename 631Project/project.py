@@ -1,6 +1,9 @@
 import cv2
 import numpy as np
 from Tracker import Tracker
+import matplotlib.pyplot as plt
+import mpl_toolkits.mplot3d.axes3d as p3
+import matplotlib.animation as animation
 
 
 def main():
@@ -45,6 +48,7 @@ def main():
     vid.release()
 
     cv2.destroyAllWindows()
+
 
 if __name__ == "__main__":
     main()
