@@ -1,22 +1,27 @@
 import cv2
-import numpy as np
 from Tracker import Tracker
-import matplotlib.pyplot as plt
-import mpl_toolkits.mplot3d.axes3d as p3
-import matplotlib.animation as animation
+from Calibration import Calibration
 
 
 def main():
+    # Designate Source
+    source = 0
+
+    # Calibrate Camera
+    calib = Calibration(0)
+
     # OpenCV Setup
-    cap = cv2.VideoCapture('Sundial.mp4')
-    frame_width = int(0.33*cap.get(3))
-    frame_height = int(0.33*cap.get(4))
+    cap = cv2.VideoCapture(0)
+
+    if cap.get(3) > 1000:
+        frame_width = int(0.33*cap.get(3))
+        frame_height = int(0.33*cap.get(4))
+    else:
+        frame_width = int(cap.get(3))
+        frame_height = int(cap.get(4))
+
     frame_rate = 30
     frame_interval = 1/frame_rate
-    f = 0.00435  # focal length, meters
-    camera_matrix = np.array([[f, 0, frame_width/2],
-                              [0, f, frame_height/2],
-                              [0, 0, 1]])
 
     vid = cv2.VideoWriter('project.avi', cv2.VideoWriter_fourcc('M','J','P','G'), frame_rate, (frame_width, frame_height))
 
@@ -35,7 +40,7 @@ def main():
         if 'tracker' in locals():
             tracker.update(frame)
         else:
-            tracker = Tracker(frame, 500, (frame_width, frame_height), camera_matrix)
+            tracker = Tracker(frame, 500, (frame_width, frame_height), calib.camera_matrix)
 
         # User Interface
         if cv2.waitKey(25) & 0xFF == ord('q'):

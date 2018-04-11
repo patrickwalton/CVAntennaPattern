@@ -1,16 +1,19 @@
 import numpy as np
 import cv2
 
+
 class Pose:
     # Represents camera pose with respect to initial image in sequence
-    #   Includes current and historical pose
+    #   Includes current and (TODO) historical pose
     def __init__(self, camera_matrix):
         self.camera_matrix = camera_matrix
         self.essential_matrix = np.eye(3)
-        self.position = np.zeros((3, 1))
+        self.position = np.array([[0, -2, 0]]).T
+        # self.orientation = np.array([[1,  0,  0],
+        #                              [0,  0,  1],
+        #                              [0, -1,  1]])
         self.orientation = np.eye(3)
         self.pose = np.eye(4)
-        self.orientationh = np.eye(4)
 
         self.draw()
 
@@ -20,7 +23,7 @@ class Pose:
                                                            self.camera_matrix,
                                                            method=cv2.RANSAC,
                                                            prob=0.999,
-                                                           threshold=1.0
+                                                           threshold=0.1
                                                            )
 
         retval, R, t, mask2 = cv2.recoverPose(self.essential_matrix,
@@ -30,12 +33,6 @@ class Pose:
                                               mask
                                               )
 
-        # R1, R2, t = cv2.decomposeEssentialMat(self.essential_matrix)
-        #
-        # if np.trace(R1) < 2.5:
-        #     R = R1
-        # else:
-        #     R = R2
 
         self.orientation = np.matmul(R, self.orientation)
 
@@ -43,7 +40,7 @@ class Pose:
 
         self.pose = np.concatenate((np.concatenate((self.orientation,
                                                    self.position), 1),
-                                   np.ones((1, 4))), 0)
+                                   np.array([[0, 0, 0, 1]])), 0)
 
         # print(np.concatenate((self.orientation, self.position), 1))
 
@@ -92,3 +89,5 @@ class Pose:
 
         # Plot Transformed Square
         cv2.imshow('square', plot_frame)
+
+        # cv2.waitKey(0)
