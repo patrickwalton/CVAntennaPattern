@@ -9,10 +9,10 @@ class Pose:
         self.camera_matrix = camera_matrix
         self.essential_matrix = np.eye(3)
         self.position = np.array([[0, -2, 0]]).T
-        self.orientation = np.array([[1,  0,  0],
-                                     [0,  0,  1],
-                                     [0, -1,  0]])
-        # self.orientation = np.eye(3)
+        # self.orientation = np.array([[1,  0,  0],
+        #                              [0,  0,  1],
+        #                              [0, -1,  0]])
+        self.orientation = np.eye(3)
         self.pose = np.eye(4)
         self.euler = [0, 0, 0]
 
@@ -66,7 +66,7 @@ class Pose:
         origin = np.matmul(self.pose, origin) + 250 * np.ones((4, 4))
 
         # Initialize Plot Frame
-        plot_frame = 255 * np.ones((500, 500))
+        plot_frame = 255 * np.ones((500, 500, 3))
 
         # Add Coordinate Axis
         cv2.line(plot_frame,
@@ -85,10 +85,12 @@ class Pose:
 
         # Add Transformed Square to Plot
         for i in range(origin.shape[1]-1):
+            color = [0, 0, 0]
+            color[2-i] = 255
             cv2.line(plot_frame,
                      tuple(origin[0:2, 0].astype(np.int)),
                      tuple(origin[0:2, i+1].astype(np.int)),
-                     (0, 0, 0),
+                     tuple(color),
                      3
                      )
 
