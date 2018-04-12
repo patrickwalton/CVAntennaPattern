@@ -9,12 +9,13 @@ class Pose:
         self.camera_matrix = camera_matrix
         self.essential_matrix = np.eye(3)
         self.position = np.array([[0, -2, 0]]).T
-        # self.orientation = np.array([[1,  0,  0],
-        #                              [0,  0,  1],
-        #                              [0, -1,  0]])
-        self.orientation = np.eye(3)
+        self.orientation = np.array([[1,  0,  0],
+                                     [0,  0,  1],
+                                     [0,  -1,  0]])
+        # self.orientation = np.eye(3)
         self.pose = np.eye(4)
         self.euler = [0, 0, 0]
+        self.rot_history = []
 
         self.draw()
 
@@ -34,22 +35,22 @@ class Pose:
                                               mask
                                               )
 
-
         self.orientation = np.matmul(R, self.orientation)
 
-        self.position = self.position + np.dot(R, t)
+        self.rotation_check()
 
-        self.pose = np.concatenate((np.concatenate((self.orientation,
-                                                   self.position), 1),
+        self.position = self.position + np.dot(self.orientation, t)
+
+        self.pose = np.concatenate((np.concatenate((self.orientation.T,
+                                                   # self.position), 1),
+                                                    np.zeros((3, 1))), 1),
                                    np.array([[0, 0, 0, 1]])), 0)
-
-        # print(np.concatenate((self.orientation, self.position), 1))
 
         self.draw()
 
         self.rot2eul()
 
-        print(self.euler)
+        self.rot_history.append(self.euler)
 
     def draw(self):
 
@@ -64,6 +65,8 @@ class Pose:
 
         # Transform Square
         origin = np.matmul(self.pose, origin) + 250 * np.ones((4, 4))
+
+        # self.rot_history.append(np.arctan2(origin[1, 1], origin[0, 1]))
 
         # Initialize Plot Frame
         plot_frame = 255 * np.ones((500, 500, 3))
@@ -98,6 +101,17 @@ class Pose:
         cv2.imshow('square', plot_frame)
 
         # cv2.waitKey(0)
+
+    def rotation_check(self):
+        # Checks if a matrix is a valid rotation matrix.
+        diff = np.linalg.norm(np.identity(3, dtype=self.orientation.dtype)
+                              - np.dot(self.orientation.T, self.orientation))
+        if diff > 1e-6:
+            print('Invalid Rotation: R.T*R != I')
+
+        diff = 1 - np.linalg.det(self.orientation)
+        if diff > 1e-6:
+            print('Invalid Rotation: det(R) = ', np.linalg.det(self.orientation))
 
     def rot2eul(self):
         R = self.orientation
