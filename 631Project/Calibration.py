@@ -1,10 +1,11 @@
 import numpy as np
 import cv2 as cv
+import glob
 
 
-class Calibration:
-
-    def __init__(self, feed):
+# class Calibration:
+#
+#     def __init__(self, feed):
 
         cap = cv.VideoCapture(feed)
 
@@ -35,8 +36,6 @@ class Calibration:
 
             gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
 
-            cv.imshow('img', img)
-
             # Find the chess board corners
 
             ret, corners = cv.findChessboardCorners(gray, (7,6), None)
@@ -59,8 +58,9 @@ class Calibration:
 
                 cv.waitKey(500)
 
+        # OpenCV Shutdown
+        cap.release()
+
         cv.destroyAllWindows
 
         ret, self.camera_matrix, dist, rvecs, tvecs = cv.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], None, None)
-
-        print(self.camera_matrix)

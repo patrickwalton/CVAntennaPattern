@@ -9,11 +9,12 @@ class Pose:
         self.camera_matrix = camera_matrix
         self.essential_matrix = np.eye(3)
         self.position = np.array([[0, -2, 0]]).T
-        # self.orientation = np.array([[1,  0,  0],
-        #                              [0,  0,  1],
-        #                              [0, -1,  1]])
-        self.orientation = np.eye(3)
+        self.orientation = np.array([[1,  0,  0],
+                                     [0,  0,  1],
+                                     [0, -1,  0]])
+        # self.orientation = np.eye(3)
         self.pose = np.eye(4)
+        self.euler = [0, 0, 0]
 
         self.draw()
 
@@ -46,19 +47,23 @@ class Pose:
 
         self.draw()
 
+        self.rot2eul()
+
+        print(self.euler)
+
     def draw(self):
 
         # Square location and size parameters
-        cx, cy, a = 0, 0, 10
+        c, a = 0, 50
 
         # Initialize Square
-        square = np.array([[cx+a, cx-a, cx-a, cx+a, cx+a],
-                           [cy+a, cy+a, cy-a, cy-a, cy+a],
-                           [1,    1,    1,    1,    1],
-                           [1,    1,    1,    1,    1]])
+        origin = np.array([[c, a, c, c],
+                           [c, c, a, c],
+                           [c, c, c, a],
+                           [1, 1, 1, 1]])
 
         # Transform Square
-        square = np.matmul(self.pose, square) + 250 * np.ones((4, 5))
+        origin = np.matmul(self.pose, origin) + 250 * np.ones((4, 4))
 
         # Initialize Plot Frame
         plot_frame = 255 * np.ones((500, 500))
@@ -79,10 +84,10 @@ class Pose:
                  )
 
         # Add Transformed Square to Plot
-        for i in range(square.shape[1]-1):
+        for i in range(origin.shape[1]-1):
             cv2.line(plot_frame,
-                     tuple(square[0:2, i].astype(np.int)),
-                     tuple(square[0:2, i+1].astype(np.int)),
+                     tuple(origin[0:2, 0].astype(np.int)),
+                     tuple(origin[0:2, i+1].astype(np.int)),
                      (0, 0, 0),
                      3
                      )
@@ -91,3 +96,20 @@ class Pose:
         cv2.imshow('square', plot_frame)
 
         # cv2.waitKey(0)
+
+    def rot2eul(self):
+        R = self.orientation
+        sy = np.sqrt(R[0, 0] * R[0, 0] + R[1, 0] * R[1, 0])
+
+        singular = sy < 1e-6
+
+        if not singular:
+            x = np.arctan2(R[2, 1], R[2, 2])
+            y = np.arctan2(-R[2, 0], sy)
+            z = np.arctan2(R[1, 0], R[0, 0])
+        else:
+            x = np.arctan2(-R[1, 2], R[1, 1])
+            y = np.arctan2(-R[2, 0], sy)
+            z = 0
+
+        self.euler = [x, y, z]

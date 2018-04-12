@@ -1,6 +1,6 @@
 import cv2
 
-cap = cv2.VideoCapture('Sundial.mp4')
+cap = cv2.VideoCapture(0)
 
 print(cap.isOpened())
 
