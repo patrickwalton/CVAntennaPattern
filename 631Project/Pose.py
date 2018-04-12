@@ -8,7 +8,7 @@ class Pose:
     def __init__(self, camera_matrix):
         self.camera_matrix = camera_matrix
         self.essential_matrix = np.eye(3)
-        self.position = np.array([[0, -2, 0]]).T
+        self.position = np.array([[0, -20, 0]]).T
         self.orientation = np.array([[1,  0,  0],
                                      [0,  0,  1],
                                      [0,  -1,  0]])
@@ -39,11 +39,11 @@ class Pose:
 
         self.rotation_check()
 
-        self.position = self.position + np.dot(self.orientation, t)
+        self.position = self.position - np.dot(self.orientation.T, t)
 
         self.pose = np.concatenate((np.concatenate((self.orientation.T,
-                                                   # self.position), 1),
-                                                    np.zeros((3, 1))), 1),
+                                                   self.position), 1),
+                                                    # np.zeros((3, 1))), 1),
                                    np.array([[0, 0, 0, 1]])), 0)
 
         self.draw()
