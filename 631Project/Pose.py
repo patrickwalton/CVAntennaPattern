@@ -5,7 +5,7 @@ import cv2
 class Pose:
     # Represents camera pose with respect to initial image in sequence
     #   Includes current and (TODO) historical pose
-    def __init__(self, camera_matrix):
+    def __init__(self, camera_matrix, frame_interval):
         self.camera_matrix = camera_matrix
         self.essential_matrix = np.eye(3)
         self.position = np.array([[0, -20, 0]]).T
@@ -16,8 +16,24 @@ class Pose:
         self.pose = np.eye(4)
         self.euler = [0, 0, 0]
         self.rot_history = []
+        self.i = 1
+
+        self.point_frame = 255 * np.zeros((500, 500, 3))
 
         self.draw()
+
+        #
+        # # Set up Pose's kalman filter
+        # self.kalman = cv2.KalmanFilter(2, 1)
+        # self.kalman.transitionMatrix = np.eye(2) + frame_interval * np.eye(2, k=1)
+        # self.kalman.measurementMatrix = np.eye(1, 2)
+        # self.kalman.processNoiseCov = np.array([[(frame_interval ** 3.) / 3., 0.],
+        #                                         [0., (frame_interval ** 3.) / 3.]]
+        #                                        ) * 1e-3 # Book: 1e-5
+        # self.kalman.measurementNoiseCov = 0.1 * np.ones((1, 1))
+        # self.kalman.errorCovPost = 1. * np.ones((2, 2))  # Needs to be identity at first to maintain meaningfulness,updated later
+        # self.kalman.statePost = np.array([[0.], [0.]])
+        # self.kalman.predict()
 
     def update(self, prior_corners, corners):
         self.essential_matrix, mask = cv2.findEssentialMat(prior_corners,
@@ -35,22 +51,27 @@ class Pose:
                                               mask
                                               )
 
-        self.orientation = np.matmul(R, self.orientation)
+        # R, R2, t = cv2.decomposeEssentialMat(self.essential_matrix)
+        #
+        # if np.trace(R) < 2.5:
+        #     R = R2
 
-        self.rotation_check()
+        self.orientation = np.matmul(R, self.orientation)
 
         self.position = self.position - np.dot(self.orientation.T, t)
 
         self.pose = np.concatenate((np.concatenate((self.orientation.T,
-                                                   self.position), 1),
-                                                    # np.zeros((3, 1))), 1),
+                                                   # self.position), 1),
+                                                    np.zeros((3, 1))), 1),
                                    np.array([[0, 0, 0, 1]])), 0)
 
         self.draw()
 
-        self.rot2eul()
-
-        self.rot_history.append(self.euler)
+        # # Correct point using Kalman filter
+        # measurement = np.array([[0.]]).astype('float64')
+        # measurement[0][0] = self.euler[1]
+        # self.rot_history.append(np.matmul(self.kalman.measurementMatrix, self.kalman.correct(measurement))[0, 0])
+        # self.kalman.predict()
 
     def draw(self):
 
@@ -65,8 +86,6 @@ class Pose:
 
         # Transform Square
         origin = np.matmul(self.pose, origin) + 250 * np.ones((4, 4))
-
-        # self.rot_history.append(np.arctan2(origin[1, 1], origin[0, 1]))
 
         # Initialize Plot Frame
         plot_frame = 255 * np.ones((500, 500, 3))
@@ -97,35 +116,15 @@ class Pose:
                      3
                      )
 
+        point = origin[0:2, 1] - 250 * np.ones((1, 2))
+        print(point)
+        point = self.i * point + 250 * np.ones((1, 2))
+        print(point)
+        self.i += 0.005
+
+        cv2.circle(self.point_frame, tuple(point.astype(int).reshape(2)), 3, (255, 255, 255), -1)
+
+        plot_frame -= self.point_frame
+
         # Plot Transformed Square
         cv2.imshow('square', plot_frame)
-
-        # cv2.waitKey(0)
-
-    def rotation_check(self):
-        # Checks if a matrix is a valid rotation matrix.
-        diff = np.linalg.norm(np.identity(3, dtype=self.orientation.dtype)
-                              - np.dot(self.orientation.T, self.orientation))
-        if diff > 1e-6:
-            print('Invalid Rotation: R.T*R != I')
-
-        diff = 1 - np.linalg.det(self.orientation)
-        if diff > 1e-6:
-            print('Invalid Rotation: det(R) = ', np.linalg.det(self.orientation))
-
-    def rot2eul(self):
-        R = self.orientation
-        sy = np.sqrt(R[0, 0] * R[0, 0] + R[1, 0] * R[1, 0])
-
-        singular = sy < 1e-6
-
-        if not singular:
-            x = np.arctan2(R[2, 1], R[2, 2])
-            y = np.arctan2(-R[2, 0], sy)
-            z = np.arctan2(R[1, 0], R[0, 0])
-        else:
-            x = np.arctan2(-R[1, 2], R[1, 1])
-            y = np.arctan2(-R[2, 0], sy)
-            z = 0
-
-        self.euler = [x, y, z]

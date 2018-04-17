@@ -45,23 +45,13 @@ def main():
         if 'tracker' in locals():
             tracker.update(frame)
         else:
-            tracker = Tracker(frame, 20, (frame_width, frame_height), camera_matrix)
+            tracker = Tracker(frame, 30, (frame_width, frame_height), frame_interval, camera_matrix)
 
         # User Interface
         if cv2.waitKey(25) & 0xFF == ord('q'):
             break
 
         cv2.imshow('Frame', tracker.frame)
-
-    # Plot
-    theta = np.asarray(tracker.pose.rot_history)
-    print(theta)
-    r = np.arange(0, 40, 40/theta.shape[0])
-    # r = 10 * np.ones(theta.shape)
-    antenna_pattern(r, theta)
-
-    # Pickle for repeats
-    pickle
 
     # OpenCV Shutdown
     cap.release()
@@ -70,18 +60,18 @@ def main():
     cv2.destroyAllWindows()
 
 
-def antenna_pattern(r, theta):
-    ax = plt.subplot(111, projection='polar')
-    ax.plot(theta, r)
-    ax.set_rmax(np.amax(r))
-    ax.set_rticks([10, 20, 30, 40])  # less radial ticks
-    ax.set_rlabel_position(-22.5)  # get radial labels away from plotted line
-    ax.grid(True)
-    handles, labels = ax.get_legend_handles_labels()
-    ax.legend(handles, labels)
-
-    ax.set_title("Antenna Pattern", va='bottom')
-    plt.show()
+# def antenna_pattern(r, theta):
+#     ax = plt.subplot(111, projection='polar')
+#     ax.plot(theta, r)
+#     ax.set_rmax(np.amax(r))
+#     ax.set_rticks([10, 20, 30, 40])  # less radial ticks
+#     ax.set_rlabel_position(-22.5)  # get radial labels away from plotted line
+#     ax.grid(True)
+#     handles, labels = ax.get_legend_handles_labels()
+#     ax.legend(handles, labels)
+#
+#     ax.set_title("Antenna Pattern", va='bottom')
+#     plt.show()
 
 
 def calibrate(source):
