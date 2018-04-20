@@ -27,6 +27,8 @@ def main():
         frame_width = int(cap.get(3))
         frame_height = int(cap.get(4))
 
+    frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
     frame_rate = 30
     frame_interval = 1/frame_rate
 
@@ -45,7 +47,7 @@ def main():
         if 'tracker' in locals():
             tracker.update(frame)
         else:
-            tracker = Tracker(frame, 30, (frame_width, frame_height), frame_interval, camera_matrix)
+            tracker = Tracker(frame, 30, (frame_width, frame_height), frame_interval, camera_matrix, frame_count)
 
         # User Interface
         if cv2.waitKey(25) & 0xFF == ord('q'):

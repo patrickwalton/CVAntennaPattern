@@ -1,11 +1,12 @@
 import numpy as np
 import cv2
+from Power import Power
 
 
 class Pose:
     # Represents camera pose with respect to initial image in sequence
     #   Includes current and (TODO) historical pose
-    def __init__(self, camera_matrix, frame_interval):
+    def __init__(self, camera_matrix, frame_interval, frame_count):
         self.camera_matrix = camera_matrix
         self.essential_matrix = np.eye(3)
         self.position = np.array([[0, -20, 0]]).T
@@ -16,7 +17,8 @@ class Pose:
         self.pose = np.eye(4)
         self.euler = [0, 0, 0]
         self.rot_history = []
-        self.i = 1
+        self.step = 0
+        self.power = Power(frame_count)
 
         self.point_frame = 255 * np.zeros((500, 500, 3))
 
@@ -117,10 +119,8 @@ class Pose:
                      )
 
         point = origin[0:2, 1] - 250 * np.ones((1, 2))
-        print(point)
-        point = self.i * point + 250 * np.ones((1, 2))
-        print(point)
-        self.i += 0.005
+        point = (self.power.peak_power[self.step] / 10.) * point + 250 * np.ones((1, 2))
+        self.step += 1
 
         cv2.circle(self.point_frame, tuple(point.astype(int).reshape(2)), 3, (255, 255, 255), -1)
 

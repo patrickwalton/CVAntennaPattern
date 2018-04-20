@@ -6,7 +6,7 @@ import cv2
 
 class Tracker:
     # Finds, tracks, and manages points in an image
-    def __init__(self, frame, point_count, frame_size, frame_interval, camera_matrix):
+    def __init__(self, frame, point_count, frame_size, frame_interval, camera_matrix, frame_count):
         self.frame = frame
         self.gray_frame = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
         self.prior_frame = self.frame
@@ -15,6 +15,7 @@ class Tracker:
         self.frame_interval = frame_interval
         self.point_count = point_count
         self.camera_matrix = camera_matrix
+        self.i = 0
 
         self.corners = cv2.goodFeaturesToTrack(self.gray_frame,
                                                maxCorners=self.point_count,
@@ -32,7 +33,7 @@ class Tracker:
 
         self.draw()
 
-        self.pose = Pose(self.camera_matrix, frame_interval)
+        self.pose = Pose(self.camera_matrix, frame_interval, frame_count)
 
     def update(self, frame):
         self.step(frame)
@@ -54,6 +55,13 @@ class Tracker:
         self.pose.update(self.prior_corners, self.corners)
 
         self.deficit = self.point_count-self.corners.shape[0]
+
+        # if self.i > 5/self.frame_interval:
+        #     self.refresh()
+        #     self.i = -1
+        # elif self.deficit > 0:
+        #     self.supplement()
+        # self.i += 1
 
         if self.deficit > 0:
             self.supplement()
