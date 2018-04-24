@@ -56,6 +56,7 @@ def main():
             break
 
         cv2.imshow('Frame', tracker.frame)
+        vid.write(tracker.frame)
 
     # OpenCV Shutdown
     cap.release()

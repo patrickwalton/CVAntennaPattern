@@ -19,11 +19,16 @@ class Pose:
         self.rot_history = []
         self.step = 0
         self.power = Power(frame_count, run_name)
+        self.frame_count = frame_count
 
         self.point_frame = 255 * np.zeros((500, 500, 3))
 
+        self.vid = cv2.VideoWriter('Orientations.avi', cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), int(1/frame_interval),
+                                   (500, 500))
+
         self.draw()
 
+        print(self.vid)
         #
         # # Set up Pose's kalman filter
         # self.kalman = cv2.KalmanFilter(2, 1)
@@ -155,5 +160,11 @@ class Pose:
 
         plot_frame -= self.point_frame
 
+        # Plot Final Frame
+        if self.step == self.frame_count -1:
+            cv2.imwrite('AntennaPattern.jpg', plot_frame)
+
         # Plot Transformed Square
         cv2.imshow('square', plot_frame)
+
+        self.vid.write(plot_frame)
