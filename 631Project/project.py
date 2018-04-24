@@ -6,6 +6,8 @@ import pickle
 
 
 def main():
+    run_name = 'Antenna0'
+
     camera_matrix = np.array([[39., 0.,   316.],
                               [0.,  359., 177.],
                               [0.,  0.,   1.]])
@@ -15,7 +17,7 @@ def main():
         camera_matrix = calibrate('OP2Cal.mp4')
 
     # OpenCV Setup
-    cap = cv2.VideoCapture('Sundial.mp4')
+    cap = cv2.VideoCapture('Sundial.mp4'.format(run_name))
 
     if not cap.isOpened():
         print("Unable to read camera feed")
@@ -47,7 +49,7 @@ def main():
         if 'tracker' in locals():
             tracker.update(frame)
         else:
-            tracker = Tracker(frame, 30, (frame_width, frame_height), frame_interval, camera_matrix, frame_count)
+            tracker = Tracker(frame, 500, (frame_width, frame_height), frame_interval, camera_matrix, frame_count, run_name)
 
         # User Interface
         if cv2.waitKey(25) & 0xFF == ord('q'):
